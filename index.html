@@ -1,4 +1,361 @@
-O<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORRIAH FX | Trading Analyser</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101522;color:#f4f6fb;font-family:Arial,sans-serif}
+header{padding:22px;background:#171f30;border-bottom:1px solid #303b50}
+h1{margin:0;color:#65d6b0;letter-spacing:2px}
+header p{color:#aab5c8;margin-bottom:0}
+main{max-width:1050px;margin:auto;padding:20px}
+.panel{background:#192337;border:1px solid #303e55;border-radius:12px;padding:18px;margin-bottom:16px}
+h2{font-size:17px;margin-top:0}
+label{display:block;color:#b8c4d8;margin:12px 0 7px}
+select,button{padding:12px;border-radius:7px;border:1px solid #43516b;background:#101a2b;color:white;width:100%;font-size:15px}
+button{background:#167c67;border:0;font-weight:bold;cursor:pointer;margin-top:12px}
+button:disabled{opacity:.5}
+.status{color:#f4c66b;font-size:14px}
+.price{font-size:30px;font-weight:bold;margin:12px 0;color:#65d6b0}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.metric{background:#101a2b;padding:14px;border-radius:8px}
+.metric small{color:#aab5c8;display:block;margin-bottom:8px}
+.metric strong{font-size:19px}
+#chart{width:100%;height:280px;display:block}
+.signal{font-size:23px;font-weight:bold}
+.buy{color:#65d6b0}.sell{color:#ff7777}.wait{color:#f4c66b}
+.note{font-size:13px;color:#aab5c8;line-height:1.6}
+@media(max-width:600px){.grid{grid-template-columns:1fr 1fr}main{padding:12px}}
+</style>
+</head>
+<body>
+
+<header>
+<h1>ORRIAH FX</h1>
+<p>Live Market Analysis & Trading Dashboard</p>
+</header>
+
+<main>
+<section class="panel">
+<h2>Market Connection</h2>
+<div id="connection" class="status">Connecting to Deriv public market data...</div>
+
+<label for="market">Select market</label>
+<select id="market" disabled>
+<option>Loading markets...</option>
+</select>
+
+<button id="refresh">Refresh Market Data</button>
+</section>
+
+<section class="panel">
+<h2>Live Market Price</h2>
+<div id="price" class="price">--</div>
+<div id="marketName" class="note">Waiting for market selection</div>
+</section>
+
+<section class="panel">
+<h2>Price Chart</h2>
+<canvas id="chart"></canvas>
+<p class="note">Live price history. The chart updates as new market data arrives.</p>
+</section>
+
+<section class="panel">
+<h2>Technical Analysis</h2>
+<div class="grid">
+<div class="metric">
+<small>EMA 9</small>
+<strong id="ema9">--</strong>
+</div>
+<div class="metric">
+<small>EMA 21</small>
+<strong id="ema21">--</strong>
+</div>
+<div class="metric">
+<small>RSI 14</small>
+<strong id="rsi">--</strong>
+</div>
+</div>
+</section>
+
+<section class="panel">
+<h2>Trading Signal</h2>
+<div id="signal" class="signal wait">WAIT</div>
+<p id="signalReason" class="note">Waiting for sufficient market data.</p>
+</section>
+
+<section class="panel">
+<h2>Risk Management</h2>
+<p class="note">
+Always decide your stop loss, take profit and position size before trading.
+This analyser does not place trades or manage your account.
+</p>
+</section>
+
+<p class="note">
+ORRIAH FX uses public, read-only Deriv market data. No account password,
+API token or trading permission is required. Signals are technical
+indicators, not guaranteed predictions. Test carefully on a demo account.
+</p>
+</main>
+
+<script>
+const WS_URL = "wss://api.derivws.com/trading/v1/options/ws/public";
+
+const $ = id => document.getElementById(id);
+
+let ws = null;
+let symbols = [];
+let prices = [];
+let currentSymbol = "";
+let requestNumber = 1;
+
+function setStatus(message, good=false) {
+  $("connection").textContent = message;
+  $("connection").style.color = good ? "#65d6b0" : "#f4c66b";
+}
+
+function connect() {
+  if (ws) {
+    ws.onclose = null;
+    ws.close();
+  }
+
+  setStatus("Connecting to Deriv...");
+  $("market").disabled = true;
+
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    setStatus("Connected. Loading available markets...", true);
+    ws.send(JSON.stringify({
+      active_symbols: "brief",
+      req_id: requestNumber++
+    }));
+  };
+
+  ws.onmessage = event => {
+    const data = JSON.parse(event.data);
+
+    if (data.error) {
+      setStatus("Market data error: " + data.error.message);
+      return;
+    }
+
+    if (data.msg_type === "active_symbols") {
+      symbols = data.active_symbols || [];
+      loadMarkets();
+    }
+
+    if (data.msg_type === "history" && data.history) {
+      prices = (data.history.prices || []).map(Number);
+      updateDashboard();
+    }
+
+    if (data.msg_type === "tick" && data.tick) {
+      const quote = Number(data.tick.quote);
+
+      if (Number.isFinite(quote)) {
+        prices.push(quote);
+        if (prices.length > 300) prices.shift();
+        updateDashboard();
+      }
+    }
+  };
+
+  ws.onerror = () => {
+    setStatus("Connection error. Check your internet and refresh.");
+  };
+
+  ws.onclose = () => {
+    setStatus("Connection closed. Press Refresh Market Data to reconnect.");
+  };
+}
+
+function loadMarkets() {
+  const select = $("market");
+  select.innerHTML = "";
+
+  const validSymbols = symbols.filter(item =>
+    item.underlying_symbol && item.underlying_symbol_name
+  );
+
+  validSymbols.sort((a,b) =>
+    a.underlying_symbol_name.localeCompare(b.underlying_symbol_name)
+  );
+
+  validSymbols.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.underlying_symbol;
+    option.textContent =
+      item.underlying_symbol_name + " (" + item.underlying_symbol + ")";
+    select.appendChild(option);
+  });
+
+  if (!validSymbols.length) {
+    select.innerHTML = "<option>No markets returned</option>";
+    setStatus("Connected, but no market symbols were returned.");
+    return;
+  }
+
+  select.disabled = false;
+  setStatus("Connected. " + validSymbols.length + " markets loaded.", true);
+
+  select.onchange = () => loadSelectedMarket();
+  loadSelectedMarket();
+}
+
+function loadSelectedMarket() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+  currentSymbol = $("market").value;
+  if (!currentSymbol) return;
+
+  prices = [];
+  $("price").textContent = "Loading...";
+  $("marketName").textContent = $("market").selectedOptions[0].textContent;
+  $("signal").textContent = "WAIT";
+  $("signal").className = "signal wait";
+  $("signalReason").textContent = "Collecting market data...";
+
+  ws.send(JSON.stringify({
+    ticks_history: currentSymbol,
+    end: "latest",
+    count: 200,
+    style: "ticks",
+    subscribe: 1,
+    req_id: requestNumber++
+  }));
+}
+
+function ema(values, period) {
+  if (values.length < period) return null;
+
+  const multiplier = 2 / (period + 1);
+  let result = values.slice(0, period).reduce((a,b)=>a+b,0) / period;
+
+  for (let i=period; i<values.length; i++) {
+    result = (values[i] - result) * multiplier + result;
+  }
+
+  return result;
+}
+
+function calculateRSI(values, period=14) {
+  if (values.length <= period) return null;
+
+  let gains = 0;
+  let losses = 0;
+
+  for (let i=values.length-period; i<values.length; i++) {
+    const change = values[i] - values[i-1];
+    if (change > 0) gains += change;
+    else losses -= change;
+  }
+
+  if (losses === 0) return 100;
+
+  const averageGain = gains / period;
+  const averageLoss = losses / period;
+  return 100 - (100 / (1 + averageGain / averageLoss));
+}
+
+function formatPrice(value) {
+  return Number(value).toFixed(5);
+}
+
+function updateDashboard() {
+  if (!prices.length) return;
+
+  const latest = prices[prices.length-1];
+  $("price").textContent = formatPrice(latest);
+
+  const e9 = ema(prices, 9);
+  const e21 = ema(prices, 21);
+  const rsi = calculateRSI(prices);
+
+  $("ema9").textContent = e9 === null ? "--" : formatPrice(e9);
+  $("ema21").textContent = e21 === null ? "--" : formatPrice(e21);
+  $("rsi").textContent = rsi === null ? "--" : rsi.toFixed(2);
+
+  let signal = "WAIT";
+  let reason = "Not enough data or no clear trading direction.";
+
+  if (e9 !== null && e21 !== null && rsi !== null) {
+    if (e9 > e21 && rsi >= 50 && rsi < 70) {
+      signal = "BUY";
+      reason = "EMA 9 is above EMA 21 and RSI indicates upward momentum.";
+    } else if (e9 < e21 && rsi >= 30 && rsi < 50) {
+      signal = "SELL";
+      reason = "EMA 9 is below EMA 21 and RSI indicates downward momentum.";
+    } else {
+      reason = "The indicators do not currently agree. Wait for confirmation.";
+    }
+  }
+
+  $("signal").textContent = signal;
+  $("signal").className = "signal " + signal.toLowerCase();
+  $("signalReason").textContent = reason;
+
+  drawChart();
+}
+
+function drawChart() {
+  const canvas = $("chart");
+  const rect = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+
+  const ctx = canvas.getContext("2d");
+  ctx.scale(ratio, ratio);
+
+  const width = rect.width;
+  const height = rect.height;
+
+  ctx.clearRect(0,0,width,height);
+
+  if (prices.length < 2) return;
+
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const range = max-min || 1;
+
+  ctx.beginPath();
+  ctx.strokeStyle = "#65d6b0";
+  ctx.lineWidth = 2;
+
+  prices.forEach((price,index) => {
+    const x = index / (prices.length-1) * width;
+    const y = height - ((price-min)/range) * (height-20) - 10;
+
+    if (index === 0) ctx.moveTo(x,y);
+    else ctx.lineTo(x,y);
+  });
+
+  ctx.stroke();
+}
+
+$("refresh").addEventListener("click", () => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    connect();
+  } else {
+    ws.send(JSON.stringify({
+      active_symbols: "brief",
+      req_id: requestNumber++
+    }));
+  }
+});
+
+window.addEventListener("resize", drawChart);
+
+connect();
+</script>
+</body>
+</html>O<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
