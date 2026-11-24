@@ -1046,6 +1046,24 @@ window.addEventListener("resize",drawChart);
 
 connect();
 </script>
+<script>
+async function enableNotifications() {
+  if (!("Notification" in window)) {
+    alert("Notifications are not supported by this browser.");
+    return;
+  }
+
+  const permission = await Notification.requestPermission();
+
+  if (permission === "granted") {
+    new Notification("ORRIAH FX", {
+      body: "Notifications are now enabled."
+    });
+  } else {
+    alert("Notification permission was not granted.");
+  }
+}
+</script>
 </body>
 </html>RRIAH FX
 AUTOMATED TRADING PLATFORM
