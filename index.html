@@ -224,7 +224,7 @@ function connect(){
  ws.onopen=()=>{
   connected=true;
   $("connection").textContent="Connected. Loading available instruments...";
-  send({active_symbols:"brief",product_type:"basic"});
+  send({active_symbols:"brief"});
  };
  ws.onmessage=event=>{
   let data;
