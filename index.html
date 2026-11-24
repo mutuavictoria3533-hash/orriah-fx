@@ -220,7 +220,7 @@ function selectSymbol(next){
 function connect(){
  if(ws)try{ws.close()}catch(e){}
  $("connection").textContent="Connecting to Deriv...";
- ws=new WebSocket("wss://ws.derivws.com/websockets/v3?app_id="+APP_ID);
+ ws=new WebSocket("wss://api.derivws.com/trading/v1/options/ws/public");
  ws.onopen=()=>{
   connected=true;
   $("connection").textContent="Connected. Loading available instruments...";
