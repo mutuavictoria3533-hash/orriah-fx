@@ -1046,10 +1046,12 @@ window.addEventListener("resize",drawChart);
 
 connect();
 </script>
-<script>
  <button onclick="enableNotifications()">
   Enable ORRIAH FX Notifications
 </button>
+<script>
+ 
+ 
 async function enableNotifications() {
   if (!("Notification" in window)) {
     alert("Notifications are not supported by this browser.");
