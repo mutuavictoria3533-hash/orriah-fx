@@ -1,377 +1,65 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ORRIAH FX Market Analyser</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#160f20">
+<title>Orriah FX | Live Market Analyser</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#080e19;color:#edf3ff;font-family:Arial,sans-serif}
-header{padding:22px;background:#101b2d;border-bottom:1px solid #293b55}
-h1{margin:0;color:#f2c76c;letter-spacing:3px}
-header p,.note,small{color:#9aabc3}
-main{max-width:1050px;margin:auto;padding:15px}
-.panel{background:#111c2e;border:1px solid #293b55;border-radius:12px;padding:16px;margin-bottom:14px}
-h2{font-size:16px;color:#f2c76c;margin:0 0 14px}
-.grid,.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}
-.metric{background:#0a1424;border:1px solid #293b55;border-radius:9px;padding:12px;min-width:0}
-.metric small{display:block;font-size:11px;margin-bottom:8px}
-.metric strong{font-size:17px;overflow-wrap:anywhere}
-label{display:block;font-size:12px;color:#9aabc3;margin:9px 0 6px}
-select,input,button{width:100%;padding:11px;background:#091423;color:#edf3ff;border:1px solid #354b68;border-radius:7px}
-button{background:#1c3a60;font-weight:bold;cursor:pointer}
-button:disabled{opacity:.5}
-.signal{font-size:29px;font-weight:bold}
-.buy{color:#19d69b}.sell{color:#ff6376}.wait{color:#f2c76c}
-.status,.note{font-size:12px;line-height:1.6}
-canvas{width:100%;height:240px;background:#091423;border-radius:8px}
-footer{text-align:center;padding:20px;color:#9aabc3;font-size:11px}
+:root{--bg:#100b17;--panel:#1b1425;--panel2:#241a31;--line:#392945;--text:#f8edf7;--muted:#b9a9bf;--pink:#ed8fbd;--violet:#b99af0;--green:#35d6a0;--red:#ff668b;--gold:#f4c7a1}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0%,#30203b 0,#100b17 38%);color:var(--text);font:15px Inter,system-ui,Arial,sans-serif}
+header{padding:22px clamp(16px,4vw,42px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:#160f20d9;position:sticky;top:0;z-index:5;backdrop-filter:blur(14px)}
+.brand{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:-1.4px}.brand span{color:var(--pink)}.brand b{color:var(--violet)}.tag{color:var(--muted);font-size:12px;margin-top:3px;letter-spacing:1.5px;text-transform:uppercase}
+.status{font-size:12px;color:var(--gold);border:1px solid var(--line);padding:8px 12px;border-radius:99px}
+main{max-width:1300px;margin:auto;padding:24px 16px 50px}.hero{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:20px}.hero h1{font-size:clamp(23px,4vw,34px);margin:0 0 6px}.hero p{color:var(--muted);margin:0;line-height:1.5}
+button,select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:11px;padding:11px 14px;font:inherit}
+button{cursor:pointer}button.primary{background:linear-gradient(110deg,#c96fa8,#8d6ed0);border:0;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:linear-gradient(145deg,#21182c,#181120);border:1px solid var(--line);border-radius:18px;padding:17px;min-width:0;box-shadow:0 12px 35px #0003}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span7{grid-column:span 7}.span8{grid-column:span 8}.span12{grid-column:span 12}
+.kicker{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px}.value{font-size:25px;font-weight:750;margin-top:8px}.positive{color:var(--green)}.negative{color:var(--red)}.accent{color:var(--pink)}.muted{color:var(--muted)}
+.card h2{font-size:16px;margin:0 0 14px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.toolbar select{min-width:190px}
+#chart{width:100%;height:280px;display:block;background:linear-gradient(180deg,#1a1323,#15101d);border-radius:12px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.metric{background:#120d1a;border:1px solid #30223b;border-radius:12px;padding:12px}.metric small{color:var(--muted);display:block}.metric strong{display:block;margin-top:6px;font-size:17px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid #35263f}th{color:var(--muted);font-weight:600}tbody tr{cursor:pointer}tbody tr:hover{background:#ffffff09}
+.pill{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:700}.buy{background:#123d32;color:#58e7b8}.sell{background:#481c2c;color:#ff8da9}.wait{background:#3d2d1c;color:#ffd09a}
+.notice{font-size:12px;color:var(--muted);line-height:1.6}.digits{display:flex;gap:7px;flex-wrap:wrap}.digit{flex:1;min-width:35px;text-align:center;padding:9px 4px;background:#130e1b;border-radius:9px;border:1px solid #34263f}.digit strong{display:block;font-size:17px}.digit small{color:var(--muted)}
+#scanStatus{color:var(--gold);font-size:12px}
+@media(max-width:850px){.span3,.span4,.span5,.span7,.span8{grid-column:span 6}}@media(max-width:560px){header{padding:15px}.hero{align-items:start;flex-direction:column}.span3,.span4,.span5,.span7,.span8{grid-column:span 12}.metrics{grid-template-columns:repeat(2,1fr)}#chart{height:230px}}
 </style>
 </head>
 <body>
-<header>
-<h1>ORRIAH FX</h1>
-<p>ADVANCED MARKET ANALYSER · FOREX · SYNTHETIC INDICES · COMMODITIES</p>
-</header>
+<header><div><div class="brand"><span>O</span>rriah <b>FX</b></div><div class="tag">Live market intelligence</div></div><div class="status" id="connection">● Connecting to Deriv…</div></header>
 <main>
-<section class="panel">
-<h2>MARKET CONNECTION</h2>
-<div class="controls">
-<div><label>Market category</label>
-<select id="category">
-<option value="synthetic">Synthetic Indices</option>
-<option value="forex">Forex</option>
-<option value="commodities">Commodities</option>
-</select></div>
-<div><label>Instrument</label>
-<select id="symbol"><option value="">Connect first</option></select></div>
-<div><label>Timeframe</label>
-<select id="timeframe">
-<option value="60">1 minute</option>
-<option value="300" selected>5 minutes</option>
-<option value="900">15 minutes</option>
-</select></div>
-<div><label>Connection</label>
-<button id="connect">CONNECT TO DERIV</button></div>
-</div>
-<p class="status" id="connection">Not connected.</p>
-</section>
-
-<section class="panel">
-<h2>LIVE MARKET</h2>
+<section class="hero"><div><h1>Market scanner</h1><p>Live tick monitoring, volatility comparison and technical analysis.<br>Analysis only — no trades are placed.</p></div><div class="toolbar"><select id="marketSelect"><option value="">Choose a market</option></select><button class="primary" id="rescan">Rescan markets</button></div></section>
 <div class="grid">
-<div class="metric"><small>Current price</small><strong id="price">--</strong></div>
-<div class="metric"><small>Last movement</small><strong id="movement">--</strong></div>
-<div class="metric"><small>Ticks received</small><strong id="tickCount">0</strong></div>
-<div class="metric"><small>Last update</small><strong id="updated">--</strong></div>
-</div>
-</section>
-
-<section class="panel">
-<h2>PRICE CHART</h2>
-<canvas id="chart" width="1000" height="300"></canvas>
-<p class="note">Candles are built from incoming live ticks. More history is collected while the analyser is running.</p>
-</section>
-
-<section class="panel">
-<h2>TECHNICAL ANALYSIS</h2>
-<div class="grid">
-<div class="metric"><small>EMA 9</small><strong id="ema9">--</strong></div>
-<div class="metric"><small>EMA 21</small><strong id="ema21">--</strong></div>
-<div class="metric"><small>RSI 14</small><strong id="rsi">--</strong></div>
-<div class="metric"><small>MACD</small><strong id="macd">--</strong></div>
-<div class="metric"><small>ATR estimate</small><strong id="atr">--</strong></div>
-<div class="metric"><small>Trend</small><strong id="trend">--</strong></div>
-<div class="metric"><small>Support</small><strong id="support">--</strong></div>
-<div class="metric"><small>Resistance</small><strong id="resistance">--</strong></div>
-</div>
-</section>
-
-<section class="panel">
-<h2>ORRIAH FX SIGNAL</h2>
-<div class="metric">
-<small>Current analysis</small>
-<div class="signal wait" id="signal">WAIT</div>
-<p class="note" id="reason">Connect to Deriv to begin analysis.</p>
-<p class="status" id="signalTime">No signal yet.</p>
-</div>
-</section>
-
-<section class="panel">
-<h2>RISK PLANNER</h2>
-<div class="controls">
-<div><label>Account balance (USD)</label><input id="balance" type="number" min="0" value="50"></div>
-<div><label>Risk per trade (%)</label><input id="risk" type="number" min="0" max="100" step=".1" value="1"></div>
-<div><label>Daily loss limit (%)</label><input id="daily" type="number" min="0" max="100" step=".1" value="2"></div>
-</div>
-<div class="grid" style="margin-top:12px">
-<div class="metric"><small>Risk amount</small><strong id="riskAmount">$0.50</strong></div>
-<div class="metric"><small>Daily loss limit</small><strong id="dailyAmount">$1.00</strong></div>
-<div class="metric"><small>5% drawdown</small><strong id="drawdown5">$2.50</strong></div>
-<div class="metric"><small>10% drawdown</small><strong id="drawdown10">$5.00</strong></div>
-</div>
-<p class="note">These figures are planning examples, not guaranteed maximum losses. Actual losses may be higher due to slippage and execution. Correct position sizing requires the contract's tick value and stop distance.</p>
-</section>
-
-<section class="panel">
-<h2>NOTIFICATIONS</h2>
-<button id="notifications">ENABLE BROWSER NOTIFICATIONS</button>
-<p id="alertStatus" class="status">Notifications not enabled.</p>
-<p class="note">Alerts are sent when the signal changes and reminders are sent every 15 minutes while the same BUY or SELL signal remains active. Keep this page open to receive alerts.</p>
-</section>
-
-<section class="panel">
-<h2>IMPORTANT NOTICE</h2>
-<p class="note">ORRIAH FX is an analysis and learning tool, not a guaranteed prediction service. Verify signals before trading and test on a demo account. This version does not open, manage or close trades automatically. A signal changing to WAIT does not close an existing trade.</p>
-</section>
-</main>
-<footer>ORRIAH FX · Independent market analysis dashboard</footer>
-
+<div class="card span3"><div class="kicker">Best market now</div><div class="value accent" id="bestMarket">Scanning…</div><div class="muted" id="bestReason">Waiting for live tick history</div></div>
+<div class="card span3"><div class="kicker">Current direction</div><div class="value" id="direction">—</div><div class="muted" id="signalText">Signal requires data</div></div>
+<div class="card span3"><div class="kicker">Suggested ticks</div><div class="value" id="ticksSuggestion">—</div><div class="muted">Context-based observation window</div></div>
+<div class="card span3"><div class="kicker">Risk guide</div><div class="value" id="riskGuide">Low</div><div class="muted" id="riskText">Risk estimate pending data</div></div>
+<div class="card span8"><h2>Live price chart <span class="muted" id="chartSymbol"></span></h2><canvas id="chart"></canvas><div class="notice">Candles are formed from incoming tick changes. Green = upward candle; rose/red = downward candle.</div></div>
+<div class="card span4"><h2>Technical analysis</h2><div class="metrics"><div class="metric"><small>EMA 9</small><strong id="ema9">—</strong></div><div class="metric"><small>EMA 21</small><strong id="ema21">—</strong></div><div class="metric"><small>RSI 14</small><strong id="rsi">—</strong></div><div class="metric"><small>Momentum</small><strong id="momentum">—</strong></div><div class="metric"><small>Trend</small><strong id="trend">—</strong></div><div class="metric"><small>Signal</small><strong id="signal">WAIT</strong></div></div></div>
+<div class="card span7"><h2>Volatility scanner</h2><div id="scanStatus">Connecting to Deriv public market data…</div><div style="overflow:auto"><table><thead><tr><th>Market</th><th>Last quote</th><th>Momentum</th><th>RSI</th><th>Signal</th></tr></thead><tbody id="scanRows"><tr><td colspan="5" class="muted">Waiting for market data…</td></tr></tbody></table></div></div>
+<div class="card span5"><h2>Digit analysis</h2><p class="notice">Frequency of the last digit in recent quotes. Historical frequency is descriptive, not a prediction.</p><div class="digits" id="digits"></div><div class="notice" id="digitNote">Collecting tick history…</div></div>
+<div class="card span12"><h2>Trading guidance</h2><div class="metrics"><div class="metric"><small>Suggested observation window</small><strong id="tickAdvice">—</strong></div><div class="metric"><small>Risk assessment</small><strong id="riskAdvice">—</strong></div><div class="metric"><small>Action</small><strong id="actionAdvice">WAIT</strong></div></div><p class="notice">Orriah FX provides educational market analysis, not guaranteed signals or financial advice. Tick-count suggestions are observation windows only, not guaranteed contract durations. Always test on demo and set your own risk limits.</p></div>
+</div></main>
 <script>
+const ENDPOINT='wss://api.derivws.com/trading/v1/options/ws/public';
+const symbols=['R_10','R_25','R_50','R_75','R_100','1HZ10V','1HZ25V','1HZ50V','1HZ75V','1HZ100V'];
+let ws,req=0,prices={},subscribed=new Set(),selected='',candles=[],scanTimer;
 const $=id=>document.getElementById(id);
-const APP_ID=1089;
-let ws=null,connected=false,allSymbols=[];
-let prices=[],candles=[],currentCandle=null;
-let symbol="",granularity=300;
-let lastSignal="WAIT",lastReminder=0;
-let tickCount=0,notificationReady=false;
-
-function send(data){
- if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(data));
-}
-function format(n){
- if(!Number.isFinite(n))return "--";
- return n.toFixed(n>100?2:n>1?4:5);
-}
-function ema(data,period){
- if(data.length<period)return null;
- let value=data.slice(0,period).reduce((a,b)=>a+b,0)/period;
- const k=2/(period+1);
- for(let i=period;i<data.length;i++)value=data[i]*k+value*(1-k);
- return value;
-}
-function rsi(data){
- if(data.length<15)return null;
- let gains=0,losses=0;
- for(let i=data.length-14;i<data.length;i++){
-  const change=data[i]-data[i-1];
-  if(change>0)gains+=change;else losses-=change;
- }
- if(losses===0)return 100;
- return 100-(100/(1+gains/losses));
-}
-function macd(data){
- if(data.length<35)return null;
- const a=ema(data,12),b=ema(data,26);
- return a-b;
-}
-function updateRisk(){
- const balance=Math.max(0,Number($("balance").value)||0);
- const risk=Math.max(0,Number($("risk").value)||0);
- const daily=Math.max(0,Number($("daily").value)||0);
- $("riskAmount").textContent="$"+(balance*risk/100).toFixed(2);
- $("dailyAmount").textContent="$"+(balance*daily/100).toFixed(2);
- $("drawdown5").textContent="$"+(balance*.05).toFixed(2);
- $("drawdown10").textContent="$"+(balance*.10).toFixed(2);
-}
-["balance","risk","daily"].forEach(id=>$(id).addEventListener("input",updateRisk));
-updateRisk();
-
-function categoryMatch(item,category){
- const market=(item.market||"").toLowerCase();
- const name=(item.display_name||"").toLowerCase();
- if(category==="synthetic")return market.includes("synthetic")||name.includes("volatility")||name.includes("jump")||name.includes("boom")||name.includes("crash");
- if(category==="forex")return market.includes("forex")||market.includes("major_pairs")||market.includes("minor_pairs");
- return market.includes("commodit")||name.includes("gold")||name.includes("silver")||name.includes("oil")||name.includes("platinum")||name.includes("palladium");
-}
-function populateSymbols(){
- const category=$("category").value;
- const list=allSymbols.filter(x=>categoryMatch(x,category));
- const select=$("symbol");
- select.innerHTML="";
- list.forEach(item=>{
-  const option=document.createElement("option");
-  option.value=item.symbol;
-  option.textContent=item.display_name+" ("+item.symbol+")";
-  select.appendChild(option);
- });
- if(!list.length){
-  const option=document.createElement("option");
-  option.textContent="No instruments returned for this category";
-  option.value="";
-  select.appendChild(option);
- }
- if(list.length)selectSymbol(list[0].symbol);
-}
-function selectSymbol(next){
- if(!next)return;
- if(symbol&&symbol!==next)send({forget:"ticks_"+symbol});
- symbol=next;
- prices=[];candles=[];currentCandle=null;
- lastSignal="WAIT";lastReminder=0;
- $("price").textContent="--";
- $("signal").textContent="WAIT";
- $("signal").className="signal wait";
- $("reason").textContent="Collecting live prices for "+symbol+".";
- $("connection").textContent="Loading "+symbol+" market data...";
- send({ticks:symbol,subscribe:1});
-}
-function connect(){
- if(ws)try{ws.close()}catch(e){}
- $("connection").textContent="Connecting to Deriv...";
- ws=new WebSocket("wss://api.derivws.com/trading/v1/options/ws/public");
- ws.onopen=()=>{
-  connected=true;
-  $("connection").textContent="Connected. Loading available instruments...";
-  send({active_symbols:"brief"});
- };
- ws.onmessage=event=>{
-  let data;
-  try{data=JSON.parse(event.data)}catch(e){return}
-  if(data.error){
-   $("connection").textContent="Deriv message: "+data.error.message;
-   return;
-  }
-  if(data.msg_type==="active_symbols"){
-   allSymbols=data.active_symbols||[];
-   populateSymbols();
-   if(!symbol&&allSymbols.length)$("connection").textContent="Connected. Choose an instrument.";
-  }
-  if(data.msg_type==="tick"&&data.tick){
-   const tick=data.tick;
-   if(tick.symbol!==symbol)return;
-   receivePrice(Number(tick.quote),Number(tick.epoch));
-  }
- };
- ws.onerror=()=>{$("connection").textContent="Connection error. Check your internet and try again."};
- ws.onclose=()=>{
-  connected=false;
-  $("connection").textContent="Disconnected. Press Connect to try again.";
- };
-}
-function receivePrice(price,epoch){
- if(!Number.isFinite(price))return;
- const previous=prices.length?prices[prices.length-1]:price;
- prices.push(price);
- if(prices.length>500)prices.shift();
- tickCount++;
- $("price").textContent=format(price);
- $("movement").textContent=price>previous?"UP":price<previous?"DOWN":"UNCHANGED";
- $("tickCount").textContent=tickCount;
- $("updated").textContent=new Date(epoch*1000).toLocaleTimeString();
- $("connection").textContent="Receiving live prices for "+symbol+".";
- buildCandle(price,epoch);
- if(prices.length>=30)analyse();
-}
-function buildCandle(price,epoch){
- const start=Math.floor(epoch/granularity)*granularity;
- if(!currentCandle||currentCandle.time!==start){
-  if(currentCandle)candles.push(currentCandle);
-  currentCandle={time:start,open:price,high:price,low:price,close:price};
- }else{
-  currentCandle.high=Math.max(currentCandle.high,price);
-  currentCandle.low=Math.min(currentCandle.low,price);
-  currentCandle.close=price;
- }
- if(candles.length>120)candles.shift();
- drawChart();
-}
-function drawChart(){
- const canvas=$("chart"),ctx=canvas.getContext("2d");
- const list=candles.concat(currentCandle?[currentCandle]:[]);
- ctx.clearRect(0,0,canvas.width,canvas.height);
- if(!list.length)return;
- const highs=list.map(c=>c.high),lows=list.map(c=>c.low);
- let max=Math.max(...highs),min=Math.min(...lows);
- if(max===min){max+=1;min-=1}
- const pad=20,step=(canvas.width-pad*2)/Math.max(1,list.length);
- ctx.strokeStyle="#263b56";ctx.lineWidth=1;
- for(let i=0;i<5;i++){
-  const y=pad+i*(canvas.height-pad*2)/4;
-  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();
- }
- list.forEach((c,i)=>{
-  const x=pad+i*step+step/2;
-  const y=v=>pad+(max-v)/(max-min)*(canvas.height-pad*2);
-  const up=c.close>=c.open;
-  ctx.strokeStyle=up?"#19d69b":"#ff6376";
-  ctx.fillStyle=ctx.strokeStyle;
-  ctx.beginPath();ctx.moveTo(x,y(c.high));ctx.lineTo(x,y(c.low));ctx.stroke();
-  const top=Math.min(y(c.open),y(c.close));
-  const height=Math.max(2,Math.abs(y(c.open)-y(c.close)));
-  ctx.fillRect(x-step*.3,top,Math.max(2,step*.6),height);
- });
- $("candleCount").textContent=list.length;
-}
-function notify(title,message){
- if(notificationReady&&Notification.permission==="granted"){
-  try{new Notification(title,{body:message})}catch(e){}
- }
-}
-function setSignal(signal,reason){
- const now=Date.now();
- $("signal").textContent=signal;
- $("signal").className="signal "+signal.toLowerCase();
- $("reason").textContent=reason;
- if(signal!==lastSignal){
-  lastSignal=signal;
-  lastReminder=now;
-  $("signalTime").textContent="Signal changed at "+new Date().toLocaleTimeString();
-  notify("ORRIAH FX: "+signal,reason);
- }else if(signal!=="WAIT"&&now-lastReminder>=900000){
-  lastReminder=now;
-  notify("ORRIAH FX reminder: "+signal,reason);
- }
-}
-function analyse(){
- const e9=ema(prices,9),e21=ema(prices,21),rv=rsi(prices),mv=macd(prices);
- const recent=prices.slice(-20);
- const support=Math.min(...recent),resistance=Math.max(...recent);
- const ranges=candles.slice(-14);
- const atr=ranges.length?ranges.reduce((sum,c)=>sum+c.high-c.low,0)/ranges.length:null;
- $("ema9").textContent=format(e9);
- $("ema21").textContent=format(e21);
- $("rsi").textContent=rv===null?"--":rv.toFixed(1);
- $("macd").textContent=format(mv);
- $("atr").textContent=format(atr);
- $("support").textContent=format(support);
- $("resistance").textContent=format(resistance);
- const trend=e9>e21?"BULLISH":e9<e21?"BEARISH":"SIDEWAYS";
- $("trend").textContent=trend;
- let buy=0,sell=0;
- if(e9>e21)buy++;else if(e9<e21)sell++;
- if(rv>50&&rv<70)buy++;else if(rv<50&&rv>30)sell++;
- if(mv>0)buy++;else if(mv<0)sell++;
- const change=prices[prices.length-1]-prices[prices.length-6];
- if(change>0)buy++;else if(change<0)sell++;
- if(buy>=3&&buy>sell){
-  setSignal("BUY","Bullish conditions detected: EMA trend, momentum and RSI support an upward bias. Verify the setup before entering.");
- }else if(sell>=3&&sell>buy){
-  setSignal("SELL","Bearish conditions detected: EMA trend, momentum and RSI support a downward bias. Verify the setup before entering.");
- }else{
-  setSignal("WAIT","Conditions are mixed or insufficient. No new entry is suggested by this analyser.");
- }
-}
-$("connect").addEventListener("click",connect);
-$("category").addEventListener("change",()=>{
- if(allSymbols.length)populateSymbols();
-});
-$("symbol").addEventListener("change",e=>selectSymbol(e.target.value));
-$("timeframe").addEventListener("change",e=>{
- granularity=Number(e.target.value);
- candles=[];currentCandle=null;
- drawChart();
-});
-$("notifications").addEventListener("click",async()=>{
- if(!("Notification"in window)){
-  $("alertStatus").textContent="This browser does not support notifications.";
-  return;
- }
- const permission=await Notification.requestPermission();
- notificationReady=permission==="granted";
- $("alertStatus").textContent=notificationReady?"Notifications enabled.":"Notification permission was not granted.";
-});
+function connect(){try{ws=new WebSocket(ENDPOINT);ws.onopen=()=>{ $('connection').textContent='● Deriv connected';$('connection').style.color='var(--green)';ws.send(JSON.stringify({active_symbols:'brief',req_id:++req}));};ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch{return}if(d.error){$('scanStatus').textContent=d.error.message;return}
+if(d.msg_type==='active_symbols'){const available=(d.active_symbols||[]).filter(s=>symbols.includes(s.symbol)||/volatility/i.test(s.display_name||''));available.forEach(s=>{prices[s.symbol]={name:s.display_name||s.symbol,quotes:[]};ws.send(JSON.stringify({ticks_history:s.symbol,adjusted:true,count:120,end:'latest',start:1,style:'ticks',req_id:++req}));});$('scanStatus').textContent=`Loading history for ${available.length} volatility markets…`;}
+if(d.msg_type==='history'&&d.echo_req?.ticks_history){const sym=d.echo_req.ticks_history; if(!prices[sym])prices[sym]={name:sym,quotes:[]};prices[sym].quotes=(d.history?.prices||[]).map(Number);if(!subscribed.has(sym)){subscribed.add(sym);ws.send(JSON.stringify({ticks:sym,subscribe:1,req_id:++req}));}if(!selected)selectMarket(sym);renderScan();}
+if(d.msg_type==='tick'){const sym=d.tick?.symbol;if(!sym)return;if(!prices[sym])prices[sym]={name:sym,quotes:[]};prices[sym].quotes.push(Number(d.tick.quote));if(prices[sym].quotes.length>240)prices[sym].quotes.shift();if(sym===selected){addCandle(Number(d.tick.quote));renderSelected();}renderScan();}
+};ws.onclose=()=>{$('connection').textContent='● Reconnecting…';$('connection').style.color='var(--gold)';subscribed.clear();setTimeout(connect,2500);};ws.onerror=()=>{$('connection').textContent='● Connection issue';};}catch(e){$('scanStatus').textContent='Could not open Deriv connection.';}}
+function ema(a,n){if(a.length<n)return null;let k=2/(n+1),v=a.slice(0,n).reduce((x,y)=>x+y,0)/n;for(let i=n;i<a.length;i++)v=a[i]*k+v*(1-k);return v;}
+function rsi(a){if(a.length<15)return null;let g=0,l=0;for(let i=a.length-14;i<a.length;i++){let d=a[i]-a[i-1];if(d>0)g+=d;else l-=d;}if(!l)return 100;return 100-100/(1+g/l);}
+function analyse(a){let e9=ema(a,9),e21=ema(a,21),rv=rsi(a),mom=a.length>10?a[a.length-1]-a[a.length-11]:0;let signal='WAIT';if(e9&&e21&&rv!==null){if(e9>e21&&mom>0&&rv>50&&rv<75)signal='BUY';else if(e9<e21&&mom<0&&rv<50&&rv>25)signal='SELL';}return {e9,e21,rv,mom,signal};}
+function selectMarket(s){selected=s;$('marketSelect').value=s;let sel=$('marketSelect');if(![...sel.options].some(o=>o.value===s)){let o=document.createElement('option');o.value=s;o.textContent=prices[s]?.name||s;sel.appendChild(o);}candles=[];(prices[s]?.quotes||[]).slice(-80).forEach(addCandle);renderSelected();}
+function addCandle(p){if(!Number.isFinite(p))return;let c=candles[candles.length-1];if(!c||c.count>=5){candles.push({o:p,h:p,l:p,c:p,count:1});if(candles.length>65)candles.shift();}else{c.h=Math.max(c.h,p);c.l=Math.min(c.l,p);c.c=p;c.count++;}}
+function renderSelected(){let a=prices[selected]?.quotes||[],x=analyse(a);$('chartSymbol').textContent=selected;$('ema9').textContent=x.e9?.toFixed(4)??'—';$('ema21').textContent=x.e21?.toFixed(4)??'—';$('rsi').textContent=x.rv?.toFixed(1)??'—';$('momentum').textContent=x.mom.toFixed(4);$('trend').textContent=x.e9&&x.e21?(x.e9>x.e21?'Bullish':'Bearish'):'—';$('signal').textContent=x.signal;$('signalText').textContent=x.signal==='WAIT'?'No clear confirmation':'Technical conditions aligned';$('direction').textContent=x.e9&&x.e21?(x.e9>x.e21?'BULLISH':'BEARISH'):'—';$('direction').className='value '+(x.e9>x.e21?'positive':x.e9<x.e21?'negative':'');$('ticksSuggestion').textContent=x.rv===null?'—':x.rv>70||x.rv<30?'5–10':'10–20';let risk=x.rv===null?'Pending':Math.abs(x.rv-50)>25?'High':'Moderate';$('riskGuide').textContent=risk;$('riskText').textContent='Volatility/indicator-based estimate, not account risk';$('tickAdvice').textContent=$('ticksSuggestion').textContent;$('riskAdvice').textContent=risk;$('actionAdvice').textContent=x.signal;renderDigits(a);drawChart();}
+function renderDigits(a){let counts=Array(10).fill(0),tail=a.slice(-100);tail.forEach(v=>{let s=String(v);let digit=Number(s.replace(/\D/g,'').slice(-1));if(Number.isFinite(digit))counts[digit]++;});let max=Math.max(1,...counts);$('digits').innerHTML=counts.map((n,i)=>`<div class="digit"><strong>${i}</strong><small>${tail.length?Math.round(n/tail.length*100):0}%</small><div style="height:4px;background:#392945;border-radius:4px;margin-top:5px"><div style="height:4px;width:${n/max*100}%;background:var(--pink);border-radius:4px"></div></div></div>`).join('');$('digitNote').textContent=`Based on ${tail.length} recent quotes.`;}
+function renderScan(){let rows=Object.entries(prices).map(([s,v])=>({s,...analyse(v.quotes),last:v.quotes.at(-1),score:v.quotes.length})).filter(x=>x.last!==undefined).sort((a,b)=>Math.abs(b.mom)-Math.abs(a.mom));if(!rows.length)return;$('scanRows').innerHTML=rows.map(x=>`<tr data-symbol="${x.s}"><td>${x.s}</td><td>${x.last}</td><td class="${x.mom>=0?'positive':'negative'}">${x.mom.toFixed(4)}</td><td>${x.rv?.toFixed(1)??'—'}</td><td><span class="pill ${x.signal.toLowerCase()}">${x.signal}</span></td></tr>`).join('');$('scanRows').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>selectMarket(tr.dataset.symbol));let best=rows[0];$('bestMarket').textContent=best.s;$('bestReason').textContent=`Strongest absolute recent momentum among loaded markets`;$('scanStatus').textContent=`Monitoring ${rows.length} markets with available tick data.`;if(!selected)selectMarket(best.s);}
+function drawChart(){let canvas=$('chart'),rect=canvas.getBoundingClientRect(),dpr=devicePixelRatio||1;canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;let ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);let w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);ctx.strokeStyle='#392945';ctx.lineWidth=1;for(let i=1;i<5;i++){let y=h*i/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}if(!candles.length)return;let lo=Math.min(...candles.map(c=>c.l)),hi=Math.max(...candles.map(c=>c.h)),pad=(hi-lo)*.12||1;lo-=pad;hi+=pad;let step=w/candles.length;let y=v=>h-((v-lo)/(hi-lo))*h; candles.forEach((c,i)=>{let x=i*step+step/2,up=c.c>=c.o;ctx.strokeStyle=up?'#35d6a0':'#ff668b';ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke();let top=Math.min(y(c.o),y(c.c)),height=Math.max(2,Math.abs(y(c.o)-y(c.c)));ctx.fillRect(x-Math.max(2,step*.28),top,Math.max(4,step*.56),height);});}
+$('marketSelect').onchange=e=>e.target.value&&selectMarket(e.target.value);$('rescan').onclick=()=>{Object.keys(prices).forEach(s=>{prices[s].quotes=[];});selected='';subscribed.clear();if(ws?.readyState===1)ws.send(JSON.stringify({active_symbols:'brief',req_id:++req}));$('scanStatus').textContent='Refreshing market histories…';};window.addEventListener('resize',drawChart);connect();
 </script>
-</body>
-</html>
+</body></html>
